@@ -3,6 +3,8 @@ name: Go CI
 on:
   push:
     branches: [main]
+    tags:
+      - "v*"
   pull_request:
     branches: [main]
 
@@ -19,8 +21,15 @@ jobs:
         with:
           go-version-file: "go.mod"
 
+      - name: Get version
+        id: get_version
+        run: |
+          echo "VERSION=$(git describe --tags --always --dirty || echo dev)" >> $GITHUB_ENV
+          echo "COMMIT=$(git rev-parse --short HEAD || echo dev)" >> $GITHUB_ENV
+          echo "BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_ENV
+
       - name: Build
-        run: make build
+        run: make build VERSION="$VERSION" GIT_COMMIT="$COMMIT" BUILD_DATE="$BUILD_DATE"
 
       - name: Run tests
         run: |
@@ -29,3 +38,33 @@ jobs:
           else
             echo "No internal tests found."
           fi
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: "go.mod"
+
+      - name: Get version
+        id: get_version
+        run: |
+          echo "VERSION=$(git describe --tags --always --dirty || echo dev)" >> $GITHUB_ENV
+          echo "COMMIT=$(git rev-parse --short HEAD || echo dev)" >> $GITHUB_ENV
+          echo "BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_ENV
+
+      - name: Build binary
+        run: make build VERSION="$VERSION" GIT_COMMIT="$COMMIT" BUILD_DATE="$BUILD_DATE"
+
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: bin/dive
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

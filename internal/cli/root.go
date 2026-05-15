@@ -16,14 +16,15 @@ func NewRootCmd(ctx context.Context) *cobra.Command {
 		SilenceErrors: true,
 	}
 
-	cmd.AddCommand(
-		newPsCmd(ctx),
-		newPgCmd(ctx),
-		newRedisCmd(ctx),
-		newMysqlCmd(ctx),
-		newShellCmd(ctx),
-		newLogsCmd(ctx),
-	)
+		cmd.AddCommand(
+		       newPsCmd(ctx),
+		       newPgCmd(ctx),
+		       newRedisCmd(ctx),
+		       newMysqlCmd(ctx),
+		       newShellCmd(ctx),
+		       newLogsCmd(ctx),
+		       newVersionCmd(),
+	       )
 
 	return cmd
 }
